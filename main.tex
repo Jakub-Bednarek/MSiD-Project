@@ -1,90 +1,74 @@
-% Szablon przygotowany przez Jarosława Drapałę z dalszymi zmianami Michała Karola
-
-% Sprawozdanie max 4 strony A4
-% Repozytorium kodu powinno być dostępne przez prowadzącego
-% Zalecane środowisko: Overleaf
-
 \documentclass[10pt]{article}
 
 \usepackage{polski}
 \usepackage{graphicx}
 \usepackage{hyperref}
-\graphicspath{{images/}}
-
 \usepackage{geometry}
-\newgeometry{tmargin=4cm, bmargin=4cm, lmargin=3.2cm, rmargin=3.2cm} 
-
 \usepackage{fancyhdr}
-\pagestyle{fancy}
-
- 
-
+\setlength{\headheight}{13.0pt}
 \begin{document}
 
+\graphicspath{{images/}}
+
+\newgeometry{tmargin=4cm, bmargin=4cm, lmargin=3.2cm, rmargin=3.2cm} 
+
+\pagestyle{fancy}
+
 \input{title_page}
-
-\begin{abstract}
-Co wykonano w pracy. Skąd pobrano dane, jakie metody i modele zastosowano. Co otrzymaliśmy.
-Praca przedstawia system rekomendacji win na podstawie jego cech. Dataset został pobrany z użyciem scrappera/API (!Uwaga! Nasze działania nie mogą zakłócać działania stron). Pobrane dane zostały następnie oczyszczone oraz użyto modelu/metody do predykcji oceny wina na podstawie jego cech...
-
-\end{abstract}
 
 \section{Wstęp -- sformułowanie problemu}
 \label{sec:wstep}
 
-Jaki jest problem?
-Autor potrzebuje ocenić wino, które nie znajdują się w danych platformy Vivino. Pozwoli mu to na predykowanie oceny lokalnego wina oraz czy warto takie wino kupować czy nie...
+Autor porzebuje określić najoptymalniejsze miejsca na wybudowanie nowego parku w mieście San Francisco na podstawie istniejących już parków oraz szkół.\\
+Rozwiąznie tego problemu pozwoli na podniesienie poziomu życia oraz zadowolenia mieszkańców w mieście.
 
 \section{Opis danych}
-Wielkość danych, opis słowny kolumn, powiązania pomiędzy cechami, zares wartości, typ zmiennej (string, categorical, int, float, etc...).
-
-Wielkość datasetu 10000 wierszy.
-Kolumna "kolor" - zmienna kategoryczna, okreśła ona kolor wina. Zbiór wartości: czerowne, białe, różowe, zielone.
-...
-
+Do rozwiązania problemu będą wykorzystywane 2 datasety.\\\\
+Pierwszym z nich jest lokalizacja wszystkich instniejących parków - rozmiar 240 wierszy. \\
+Kolumna "shape" - określa kształ parku, który zostaje zamienony na punkt - środek parku reprezentujący jego położenie.\\ \\
+Drugim z nich jest położenie wszystkich szkół - rozmiar 445 wierszy.\\
+Kolumna "location\_1" - zmienna określająca długość oraz szerokośc geograficzną obiektu, reprezentuje punkt na mapie.
 
 \section{Opis rozwiązania}
 
-Dane kto kogo zostaną pobrane ze strony \url{www.vivino.com}. Dostęp do danych uzyskano za pomocą API. Baza została zapisana w postaci ramki danych biblioteki \texttt{Pandas}. Zawiera ona informacje o 10000 winach wraz z 12 cechami je określającymi.
-
-Używając metody \textit{XYZ} na danych uzyskano model pozwajacy na określenie oceny wina na podstawie jego koloru, rocznika, ceny oraz szczepu...
+Dane zostały pobrane ze strony \url{https://data.sfgov.org/}. Dostęp do danych uzyskano za pomocą API, natomiast w przypadku wykorzystywanych datasetów nie był potrzebny do tego klucz prywatny, ponieważ są to dane dostępne publicznie. Baza została zapisana w postaci ramki danych korzystacjąc z biblioteki \texttt{Pandas}, a następnie przetworzone tak, aby każdy obiekt był reprezentowany przez dwie wartości - \texttt{x, y}. Tak przygotowane dane zostały następnie przetworzone przy wykorzystaniu biblioteki \texttt{constraint}, która pozwala na określenie ograniczeń oraz danych, którymi w naszym przypadku są położenia szkół oraz istniejących już parków. Dzięki temu uzyskamy model reprezentujący najbardziej optymalne miejsca budowy.
 
 \section{Rezultaty obliczeń}
 
 \subsection{Plan badań}
-Zbiór danych zostanie podzielony na dwie części: treningową i testową w stosunku 80:20. 
+Do przeprowadzenia badań musimy określić ograniczenia, którymi algorytm będzie się kierował. W tym przypadku dobór wartości jest następujący:
+\begin{enumerate}
+    \item Minimalna i maksymalna odległość od istniejącej szkoły: ~0.95km, ~1km
+    \item Minimalna i maksymalna odległośc od istniejącego parku: ~4km, ~4.2km
+    \item Przedział przeszukiwanych położeń dla x: minimalna oraz maksymalna wartość długości geograficznej istniejących parków.
+    \item Przedział przeszukiwanych położeń dla y: minimalna oraz maksymalna wartość szerokości geograficznej istniejących parków.
+\end{enumerate}
 
+Tak dobrane wartości pozwalają na stworzenie formuł reprezentujących nasze ograniczenia.\\
+Położenia spełniające warunek odległości od istniejącej szkoły:
+\[ distance = (new\_pos\_x - school\_x)^2 + (new\_pos\_y - school\_y)^2 \]
+\[if distance > min\_school\_distance^2 and distance < max\_school\_distance^2: True\]
+Następnie ze znalezionych pozycji możemy wybrać te, które spełniają warunek odległości od istniejącego parku:
+\[distance = (found\_position\_x - park\_x)^2 + (found\_position\_y - park\_y)^2\]
+\[if distance > min\_park\_distance^2 and distance < max\_park\_distance^2: True\]
 
-\subsection{Wyniki obliczeń} 
-Model oceny wina można przedstawić następującym wzorem:
-\begin{equation}
-\det Score = alpha * rocznik + beta * catToOneHot(kolor) + gamma * catToOneHot(szczep) 
-\label{eq:wzor_wazny}
-\end{equation}
-gdzie $catToDec$ to funkcja mapująca dane kategoryczne na reprezentację one-hot.
-
-Na rys. \ref{fig:korelacje} pokazany jest przykładowy wykres. 
-\begin{figure}[!hbt]
-\begin{center}
-\includegraphics[width=0.8\linewidth]{rys1.png}
-\caption{Fałszywe korelacje}
-\label{fig:korelacje}
-\end{center}
-\end{figure}
-
-Oznacza to że szczep wina jest nieistotny, natomiast najważniejszym elementem w ocenie wina jest cena.
-
-Podsumowując, symulacje ujawniają że wg. (\ref{eq:wzor_wazny}) ocena wina na półce powinna byc bardzo prosta...
-Jakie metryki użyto do oceny modelu/metody...
-
+Gdzie distance w obu przypadkach oznacza odległość punktu od danego obiektu, new\_pos oznacza nową pozycję, która będzie sprawdzana, a school\_x, school\_y, park\_x, park\_y oznaczają kolejno położenia aktualnie sprawdzanych szkół i parków.\\
+Dla optymalizacji programu wykorzystano podniesie zmiennych reprezentujących maksymalny i minimalny dystans od danego obiektu do kwadratu, tak aby uniknąć pierwiastkowania przy obliczaniu odległości między dwoma punktami.
+\newpage
+\subsection{Wyniki obliczeń}
+\includegraphics[width = 15cm]{images/plots/optimal_parks.png}
+\newline 
+Otrzymane wyniki można zaprezentować na wykresie, reprezentującym długość oraz szerokość geograficzną jako punkty.
 \section{Wnioski}
-Przedstawiona metoda pozwala na przygotowanie modelu i ten model jest wytrzymały na nowe dane. Uzyskane model daje szczególnie ciekawe dane w asortymencie win do 20 zł do 30 zł w Biedronce, pokazując że wina w tym zakresie cenowym osiągają szczególnie wysokie oceny...
+Przedstawiona metoda pozwala na wyszukiwanie optymalnych miejsc na podstawie informacji o istniejących obiektach. Warto zauważyć, że przy pobieraniu datasetu należy zwrócić uwagę na rozłożenie zmiennych określających długość i szerokość geograficzną, jako iż mogą one występować zamiennie.\\
+Należy również podkreślić, że w celach wykonania projektu, dataset został zmniejszony odpowiednio do rozmiaru 100 wierszy, tak aby algorytm wykonał się w realnym czasie.\\
+Jak widzimy na załączonym wykresie, otrzymaliśmy zbiór najbardziej optymalnych miejsc na wybudowanie nowego parku, reprezentowanych jako punkty. Takie informacje można wykorzystać w procesie planowania kolejnych inwestycji, tak aby stosunek kosztów do wartości publicznej był jak największy.
 
 \appendix
 \section{Dodatek}
 Kody źródłowe(utrzymane w konwencji języka Python wraz z instrukcjmi uruchomienia) umieszczone zostały w repozytorium github:
 
-\noindent \url{https://github.com/jdrapala/sieci_zlozone}.
+\noindent \url{github.com/Jakub-Bednarek/MSiD-Project}.
 
 
 \end{document}

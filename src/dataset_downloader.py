@@ -79,7 +79,7 @@ def convert_df_to_x_y_lists(df):
         except ValueError as err:
             pass
 
-    return (x_list[:200], y_list[:200])
+    return (x_list[:100], y_list[:100])
 
 
 def download_all_datasets():
